@@ -1,16 +1,21 @@
 package eorm
 
 import (
-	"./logger"
-	"./util"
 	"database/sql"
 	"errors"
-	_ "github.com/go-sql-driver/mysql"
 	"strings"
+
+	"./logger"
+	"./util"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type SqlService interface {
+	// 根据参数批量删除
 	insert(tableName string, batchParams [][]eormData) (int64, error)
+
+	// 根据条件删除记录
+	delete(tableName string, andParam interface{}, orParam interface{})
 }
 
 type SqlServiceImpl struct {
@@ -86,4 +91,63 @@ func (sqlService *SqlServiceImpl) insert(tableName string, batchParams [][]eormD
 	}
 	return -1, errors.New("执行sql失败")
 
+}
+
+// 根据条件删除记录
+func (sqlService *SqlServiceImpl) delete(tableName string, andParam []eormData, orParam []eormData) {
+	// sql前缀
+	sqlPrefix := "delete from" + tableName;
+
+	// 完整sql
+	var sql string
+
+	andParamNum := len(andParam)
+	orParamNum := len(orParam)
+	if andParamNum == 0 && orParamNum == 0 {
+		// 如果两个参数都没有
+		sql = sqlPrefix
+	}
+
+	// sql 执行参数
+	params := make([]interface{}, 0, andParamNum + orParamNum)
+
+	// 如果与请求数据不为空
+	if andParamNum > 0 {
+		sqlParmas, sqlPlaceHolder := getParamAndSql(andParam)
+		if orParamNum > 0 {
+			sqlPrefix = sqlPrefix + " where (" + sqlPlaceHolder + ")"
+		} else {
+			sql = sqlPrefix + " where" + sqlPlaceHolder
+		}
+		
+	}
+
+	// 如果或请求数据不为空
+	if orParamNum> 0 {
+		andParamStr := make([]string, 0, andParamNum)
+		for _, item := range {
+			t := item.property + " = ?"
+			andParamStr = append(andParamStr, t)
+			params = append(params, item.value)
+		}
+		andStr := strings.join(andParamStr, ",")
+		if orParamNum > 0 {
+			sqlPrefix = sqlPrefix + " where (" + andStr + ")"
+		} else {
+			sql = sqlPrefix + " where" + andStr
+		}
+	}
+}
+
+func getParamAndSql(params []interface{}) ([]interface{}, string) {
+	sqlParam := make([]interface{}, 0, len(params))
+	sqlPlaceHolder := make([]string, 0, len(params))
+	for _, item := range params{
+		t := item.property + " = ?"
+		sqlPlaceHolder = append(sqlPlaceHolder, t)
+		sqlParam = append(sqlParam, item.value)
+	}
+	andStr := strings.join(sqlPlaceHolder, ",")
+
+	return sqlParam, andStr
 }
