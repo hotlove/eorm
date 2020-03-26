@@ -1,7 +1,7 @@
 package util
 
 import (
-	"../options"
+	"github.com/hotlove/eorm/options"
 	"strconv"
 	"strings"
 )

@@ -1,8 +1,9 @@
-package eorm
+package test
 
 import (
-	"./options"
 	"fmt"
+	"github.com/hotlove/eorm"
+	"github.com/hotlove/eorm/options"
 	"testing"
 )
 
@@ -21,7 +22,7 @@ func TestInsert(t *testing.T) {
 			options.Database("spring-boot"),
 			options.DriverName(options.MYSQL))
 
-	InitEorm(newOptions)
+	eorm.InitEorm(newOptions)
 
 	var batchInsert []interface{}
 	for i := 20; i < 30; i++ {
@@ -32,7 +33,7 @@ func TestInsert(t *testing.T) {
 		}
 		batchInsert = append(batchInsert, data)
 	}
-	aa, err := BatchInsert(batchInsert)
+	aa, err := eorm.BatchInsert(batchInsert)
 	fmt.Printf("%+v", aa)
 	fmt.Printf("%+v", err)
 }
