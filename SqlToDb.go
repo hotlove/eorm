@@ -3,11 +3,10 @@ package eorm
 import (
 	"database/sql"
 	"errors"
-	"strings"
-
-	"./logger"
-	"./util"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/hotlove/eorm/logger"
+	"github.com/hotlove/eorm/util"
+	"strings"
 )
 
 type SqlService interface {
@@ -94,9 +93,9 @@ func (sqlService *SqlServiceImpl) insert(tableName string, batchParams [][]eormD
 }
 
 // 根据条件删除记录
-func (sqlService *SqlServiceImpl) delete(tableName string, andParam []eormData, orParam []eormData) {
+func (sqlService *SqlServiceImpl) delete(tableName string, andParam []interface{}, orParam []interface{}) {
 	// sql前缀
-	sqlPrefix := "delete from" + tableName;
+	sqlPrefix := "delete from" + tableName
 
 	// 完整sql
 	var sql string
@@ -109,7 +108,7 @@ func (sqlService *SqlServiceImpl) delete(tableName string, andParam []eormData, 
 	}
 
 	// sql 执行参数
-	params := make([]interface{}, 0, andParamNum + orParamNum)
+	params := make([]interface{}, 0, andParamNum+orParamNum)
 
 	// 如果与请求数据不为空
 	if andParamNum > 0 {
@@ -119,30 +118,27 @@ func (sqlService *SqlServiceImpl) delete(tableName string, andParam []eormData, 
 		} else {
 			sql = sqlPrefix + " where" + sqlPlaceHolder
 		}
-		
+
+		params = append(params, sqlParmas...)
 	}
 
 	// 如果或请求数据不为空
-	if orParamNum> 0 {
-		andParamStr := make([]string, 0, andParamNum)
-		for _, item := range {
-			t := item.property + " = ?"
-			andParamStr = append(andParamStr, t)
-			params = append(params, item.value)
-		}
-		andStr := strings.join(andParamStr, ",")
-		if orParamNum > 0 {
-			sqlPrefix = sqlPrefix + " where (" + andStr + ")"
+	if orParamNum > 0 {
+		sqlParmas, sqlPlaceHolder := getParamAndSql(orParam)
+		if andParamNum > 0 {
+			sqlPrefix = sqlPrefix + " or (" + sqlPlaceHolder + ")"
 		} else {
-			sql = sqlPrefix + " where" + andStr
+			sql = sqlPrefix + " where" + sqlPlaceHolder
 		}
+		params = append(params, sqlParmas...)
 	}
+
 }
 
 func getParamAndSql(params []interface{}) ([]interface{}, string) {
 	sqlParam := make([]interface{}, 0, len(params))
 	sqlPlaceHolder := make([]string, 0, len(params))
-	for _, item := range params{
+	for _, item := range params {
 		t := item.property + " = ?"
 		sqlPlaceHolder = append(sqlPlaceHolder, t)
 		sqlParam = append(sqlParam, item.value)
